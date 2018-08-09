@@ -10,8 +10,8 @@
  *       Revision:  none
  *       Compiler:  gcc
  *
- *         Author:  YOUR NAME (), 
- *   Organization:  
+ *         Author:  YOUR NAME (),
+ *   Organization:
  *
  * =====================================================================================
  */
@@ -62,6 +62,9 @@ void thread_wakeup(thread_t *);
 
 // Retorna um id numérico da thread em execução
 int thread_get_id();
+
+// Retorna o ponteiro para a thread atual
+thread_t* thread_get_current();
 
 
 

@@ -10,8 +10,8 @@
  *       Revision:  none
  *       Compiler:  gcc
  *
- *         Author:  YOUR NAME (), 
- *   Organization:  
+ *         Author:  YOUR NAME (),
+ *   Organization:
  *
  * =====================================================================================
  */
@@ -56,7 +56,7 @@ int n_threads = 1;
 void threading_sched(void * none) {
     static int i = 0;
 
-    do { 
+    do {
         //printf("You've reached the sched from threads %d, please leave a message\n",
         //        current_thread);
 
@@ -94,17 +94,19 @@ void thread_exit(void * ignored) {
 
 int threading_init() {
     bzero(threads, sizeof(threads));
-    char stack[1000];
 
     if (getcontext(&threads[MAIN_CTX].t_ctx)) return 1;
 
-    threads[SCHED_CTX].t_ctx.uc_link = &threads[MAIN_CTX].t_ctx;
-    threads[SCHED_CTX].t_ctx.uc_stack.ss_sp = malloc(MAX_STACK_SIZE);
-    threads[SCHED_CTX].t_ctx.uc_stack.ss_size = MAX_STACK_SIZE;
-    
-    threads[MAIN_CTX].state = threads[SCHED_CTX].state = READY;
-    
     getcontext(&threads[SCHED_CTX].t_ctx);
+
+    threads[SCHED_CTX].t_ctx.uc_stack.ss_sp = malloc(MAX_STACK_SIZE);
+    if (!threads[SCHED_CTX].t_ctx.uc_stack.ss_sp)
+        return -1;
+
+    threads[SCHED_CTX].t_ctx.uc_link = &threads[MAIN_CTX].t_ctx;
+    threads[SCHED_CTX].t_ctx.uc_stack.ss_size = MAX_STACK_SIZE;
+
+    threads[MAIN_CTX].state = threads[SCHED_CTX].state = READY;
 
     makecontext(&threads[SCHED_CTX].t_ctx, ( void (*)(void))threading_sched, 1, NULL);
 
@@ -126,6 +128,7 @@ void thread_wakeup(thread_t * t) {
         t->state = READY;
     }
 }
+
 void * thread_join(thread_t *t) {
     int i;
 
@@ -152,15 +155,19 @@ thread_t * thread_create(thread_fun_t thread_fun, void * param) {
     int i;
     for (i = 1; i < SCHED_CTX; i++) {
         if (threads[i].state == UNITIALIZED) {
-            threads[i].t_ctx.uc_link = &threads[MAIN_CTX].t_ctx;
+            getcontext(&threads[i].t_ctx);
+
             threads[i].t_ctx.uc_stack.ss_sp = malloc(MAX_STACK_SIZE);
+            if (!threads[i].t_ctx.uc_stack.ss_sp)
+                return NULL;
+
+            threads[i].t_ctx.uc_link = &threads[MAIN_CTX].t_ctx;
             threads[i].t_ctx.uc_stack.ss_size = MAX_STACK_SIZE;
             threads[i].retval = NULL;
             threads[i].n_join_waitlist = 0;
 
             threads[i].state = READY;
 
-            getcontext(&threads[i].t_ctx);
             n_threads++;
             makecontext(&threads[i].t_ctx, ( void (*)(void))thread_fun, 1, param);
 
