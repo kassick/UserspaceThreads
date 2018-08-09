@@ -72,7 +72,9 @@ int thread_get_id();
 struct sema;
 typedef struct sema sema_t;
 
-void sema_wait(sema_t*);
-void sema_signal(sema_t*);
+int  sema_init(sema_t*, int value);     // Inicializa um semaforo
+sema_t* sema_create(int value);
+void sema_wait(sema_t*);                // (decremento) espera por um semaforo
+void sema_signal(sema_t*);              // (incremento) sinaliza
 
 #endif

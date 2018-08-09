@@ -173,3 +173,56 @@ thread_t * thread_create(thread_fun_t thread_fun, void * param) {
 int thread_get_id() {
     return current_thread;
 }
+
+thread_t* thread_get_current() {
+    return &threads[current_thread];
+}
+
+// Semaphores
+struct sema {
+    thread_t* queue[MAX_THREADS];
+    int ni, nd;
+    int value;
+};
+
+int sema_init(sema_t* sema, int value)
+{
+    sema->ni = sema->nd = 0;
+    sema->value = value;
+
+    return 0;
+}
+
+sema_t* sema_create(int value) {
+    sema_t* sema = malloc(sizeof(struct sema));
+    if (!sema)
+        return NULL;
+
+    sema_init(sema, value);
+
+    return sema;
+}
+
+void sema_wait(sema_t* sema) {
+    sema->value--;
+
+    // value < 0? current thread waits
+    if (sema->value < 0) {
+        sema->queue[sema->ni++] = thread_get_current();
+        thread_block();
+    }
+}
+
+void sema_signal(sema_t* sema) {
+    sema->value++;
+
+    if (sema->value <= 0) {
+        // someone was waiting? someone *should* be waiting, but I allow
+        // semaphores to be initialized with negative values ...
+        if (sema->nd != sema->ni)
+        {
+            thread_t* wake = sema->queue[sema->nd++];
+            thread_wakeup(wake);
+        }
+    }
+}
